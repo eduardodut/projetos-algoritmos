@@ -1,0 +1,105 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Atividades da 1a entrega:
+
+a) Realizar a leitura do arquivo de entrada, armazenando os dados dos contratos (0,5 ponto):
+    1. Em um vetor de objetos do tipo contrato; e
+    2. Em uma matriz, indexada pelo fornecedor, pelo mês de início e pelo mês de fim do contrato, onde cada elemento armazena o valor do contrato respectivo.
+```{r}
+entrada <- array(dim = c(3,3,2))
+entrada[1,1,1] 
+```
+    
+```{r message=FALSE, warning=FALSE}
+start_time <- Sys.time()
+library(magrittr)
+library(readr)
+
+parametro <- read.table(file = "Dados/entrada.txt", 
+    header = FALSE, nrows = 1, col.names = c("n", "m", "t"))
+attach(parametro)
+
+entrada_matricial <- array(dim = c(m, #número do fornecedor
+                         n, #mês_inicial
+                         n))#mês_final
+
+
+
+    lines <- read_lines(file= "Dados/entrada.txt", skip = 0, skip_empty_rows = FALSE, n_max = -1L, locale = default_locale(), na = character(),  progress = show_progress())
+    
+    
+    
+for (i in 2:length(lines)) {
+    
+    dados =  strsplit(lines[i]," ")[[1]]
+    empresa <- strtoi(dados[1])
+    mes_inicial <- strtoi(dados[2])
+    mes_final <- strtoi(dados[3])
+    valor <- as.double(dados[4])
+    
+    entrada_matricial[empresa, mes_inicial, mes_final] <- valor
+    
+    }
+    
+  
+entrada_vetorizada <- read_table2("Dados/entrada.txt",
+     col_names = c("fornecedor", "mes_inicial", "mes_final", "valor"), col_types = cols(fornecedor = col_integer(),
+         mes_inicial = col_integer(), mes_final = col_integer()),
+     skip = 1)
+
+
+entrada_vetorizada <- entrada_vetorizada[,c("fornecedor", "mes_inicial", "mes_final","valor")] %>% as.matrix()
+
+end_time <- Sys.time()
+
+end_time - start_time
+```
+
+
+b) Explicar qual das duas maneiras de armazenamento dos dados é mais eficiente, em relação ao consumo de memória, tanto em termos assintóticos quanto em termos de valores absolutos. (0,5 ponto)
+c) Implementar o método de ordenação Insertion Sort para ordenar o vetor de objetos do tipo contrato. Criar um clone do vetor e aplicar o método de ordenação, exibindo ao final o tempo total de execução da ordenação. (1,0 ponto)
+
+```{r}
+insertion_sort <- function(A){
+     
+  for (j in 2:dim(A)[1]) {
+    key = A[j,] 
+
+    i = j - 1 
+    while (i > 0 && A[i,'valor'] > key[, 'valor']) {
+      A[(i + 1),] = A[i,]
+    
+      i = i - 1 
+    }
+    A[(i + 1),] = key
+  }
+  A
+} 
+start_time <- Sys.time()
+saida <- insertion_sort(entrada_vetorizada)
+end_time <- Sys.time()
+
+end_time - start_time
+```
+
+
+d) Apresentar a complexidade da função descrita no item anterior, fazendo uso de notação assintótica e tendo como parâmetros somente a quantidade n de meses e a quantidade m de fornecedores. (0,5 ponto)
+e) Implementar o método de ordenação Mergesort para ordenar o vetor de objetos do tipo contrato. Criar um clone do vetor e aplicar o método de ordenação, exibindo ao final o tempo total de execução da ordenação. (1,0 ponto)
+f) Apresentar a complexidade da função descrita no item anterior, fazendo uso de notação assintótica e tendo como parâmetros somente a quantidade n de meses e a quantidade m de fornecedores. (0,5 ponto)
+g) Implementar o método de ordenação Heapsort para ordenar o vetor de objetos do tipo contrato. Criar um clone do vetor e aplicar o método de ordenação, exibindo ao final o tempo total de execução da ordenação. (1,0 ponto)
+h) Apresentar a complexidade da função descrita no item anterior, fazendo uso de notação assintótica e tendo como parâmetros somente a quantidade n de meses e a quantidade m de fornecedores. (0,5 ponto)
+i) Implementar o método de ordenação Quicksort para ordenar o vetor de objetos do tipo contrato. Criar um clone do vetor e aplicar o método de ordenação, exibindo ao final o tempo total de execução da ordenação. (1,0 ponto)
+j) Apresentar a complexidade da função descrita no item anterior, fazendo uso de notação assintótica e tendo como parâmetros somente a quantidade n de meses e a quantidade m de fornecedores. (0,5 ponto)
+k) Baseando-se nas ideias dos algoritmos apresentados, criar um método de ordenação que, entretanto, explore as regras de formação de preços de contratos de um fornecedor (expressas na matriz de contratos), para realizar a ordenação dos contratos pelo valor, exibindo ao final o tempo total de execução da ordenação. (2,0 pontos)
+l) Apresentar a complexidade da função descrita no item anterior, fazendo uso de notação assintótica e tendo como parâmetros somente a quantidade n de meses e a quantidade m de fornecedores. (1,0 ponto)
+
+
+
+```{r}
+
+
+```
+
