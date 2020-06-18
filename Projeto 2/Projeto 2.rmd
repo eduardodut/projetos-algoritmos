@@ -8,54 +8,88 @@ Atividades da 1a entrega:
 a) Realizar a leitura do arquivo de entrada, armazenando os dados dos contratos (0,5 ponto):
     1. Em um vetor de objetos do tipo contrato; e
     2. Em uma matriz, indexada pelo fornecedor, pelo mês de início e pelo mês de fim do contrato, onde cada elemento armazena o valor do contrato respectivo.
-```{r}
-entrada <- array(dim = c(3,3,2))
-entrada[1,1,1] 
-```
+
     
 ```{r message=FALSE, warning=FALSE}
 start_time <- Sys.time()
 library(magrittr)
 library(readr)
 
-parametro <- read.table(file = "Dados/entrada.txt", 
-    header = FALSE, nrows = 1, col.names = c("n", "m", "t"))
+parametro <- read.table(
+  file = "Dados/entrada.txt",
+  header = FALSE,
+  nrows = 1,
+  col.names = c("n", "m", "t")
+)
 attach(parametro)
 
 entrada_matricial <- array(dim = c(m, #número do fornecedor
-                         n, #mês_inicial
-                         n))#mês_final
+                                   n, #mês_inicial
+                                   n))#mês_final
 
 
+arquivo_em_linhas <-
+  read_lines(
+    file = "Dados/entrada.txt",
+    skip = 0,
+    skip_empty_rows = FALSE,
+    n_max = -1L,
+    locale = default_locale(),
+    na = character(),
+    progress = show_progress()
+  )
 
-    lines <- read_lines(file= "Dados/entrada.txt", skip = 0, skip_empty_rows = FALSE, n_max = -1L, locale = default_locale(), na = character(),  progress = show_progress())
-    
-    
-    
-for (i in 2:length(lines)) {
-    
-    dados =  strsplit(lines[i]," ")[[1]]
-    empresa <- strtoi(dados[1])
-    mes_inicial <- strtoi(dados[2])
-    mes_final <- strtoi(dados[3])
-    valor <- as.double(dados[4])
-    
-    entrada_matricial[empresa, mes_inicial, mes_final] <- valor
-    
-    }
-    
+i = 0
+for (i in 2:length(arquivo_em_linhas)) {
+  dados =  strsplit(arquivo_em_linhas[i], " ")[[1]]
+  empresa = strtoi(dados[1])
+  mes_inicial = strtoi(dados[2])
+  mes_final = strtoi(dados[3])
+  valor = as.double(dados[4])
   
-entrada_vetorizada <- read_table2("Dados/entrada.txt",
-     col_names = c("fornecedor", "mes_inicial", "mes_final", "valor"), col_types = cols(fornecedor = col_integer(),
-         mes_inicial = col_integer(), mes_final = col_integer()),
-     skip = 1)
+  entrada_matricial[empresa, mes_inicial, mes_final] = valor
+  
+}
 
 
-entrada_vetorizada <- entrada_vetorizada[,c("fornecedor", "mes_inicial", "mes_final","valor")] %>% as.matrix()
+entrada_vetorizada <- read_table2(
+  "Dados/entrada.txt",
+  col_names = c("fornecedor", "mes_inicial", "mes_final", "valor"),
+  col_types = cols(
+    fornecedor = col_integer(),
+    mes_inicial = col_integer(),
+    mes_final = col_integer()
+  ),
+  skip = 1
+)
+#%>% dplyr::mutate(duracao = mes_final - mes_inicial + 1)
+
+
+entrada_vetorizada <-
+  entrada_vetorizada[, c("fornecedor", "mes_inicial",  "mes_final",  "valor")] %>%  as.matrix()
 
 end_time <- Sys.time()
 
 end_time - start_time
+```
+
+```{r}
+entrada_matricial[1,2,2]
+```
+
+
+```{r}
+#denso
+n_posicoes_entrada_vetorizada = 4*        #o número de dados por contrato (empresa, mês inicial, mês final e valor) 
+                                m*        #numéro de empresas
+                                n*(n+1)/2 # soma da progressão aritmética dos contratos por empresas
+
+#esparso
+n_posicões_entrada_matricial = m*        #numéro de empresas
+                                n*(n+n)/2# m*n^2 ou, a soma de 120 até 120, (ao invés de 120 até 1, pois a posição é alocada mesmo que não haja contrato para ocupá-la)
+
+n_posicoes_entrada_vetorizada
+n_posicões_entrada_matricial
 ```
 
 
@@ -65,24 +99,31 @@ c) Implementar o método de ordenação Insertion Sort para ordenar o vetor de o
 ```{r}
 insertion_sort <- function(A){
      
-  for (j in 2:dim(A)[1]) {
-    key = A[j,] 
+  for (i in 2:dim(A)[1]) {
+    key <- A[i,] 
 
-    i = j - 1 
-    while (i > 0 && A[i,'valor'] > key[, 'valor']) {
-      A[(i + 1),] = A[i,]
+    j <- i - 1 
+    while (i > 0 && A[i,"valor"] > key["valor"]) {
+      A[(j + 1),] <- A[j,]
     
-      i = i - 1 
+      j = j - 1 
     }
-    A[(i + 1),] = key
+    A[(j + 1),] = key
   }
   A
 } 
+amostras <- sample(1:72600,100)
 start_time <- Sys.time()
-saida <- insertion_sort(entrada_vetorizada)
+
+
+saida <- insertion_sort(entrada_vetorizada[amostras,])
 end_time <- Sys.time()
 
-end_time - start_time
+duracao_insertion_sort <- end_time - start_time
+duracao_insertion_sort
+```
+```{r}
+entrada_vetorizada[1,]
 ```
 
 
