@@ -15,17 +15,43 @@ end
 function insertionsort!(A::Array{Tuple{Int64,Int64,Int64,Float64}})
 
     @inbounds Juno.@progress for i = 2:length(A)
-        key = A[i]
+        #atribuição da chave de comparação
+        chave = A[i]
+        #
         j = i - 1
-        while j > 0 && A[j][4] > key[4]
+
+        #comparação do elemento chave e reposicionamento dos elementos maiores
+
+        while j > 0 && A[j][4] > chave[4]
             A[j+1] = A[j]
             j = j - 1
         end
-        A[j+1] = key
+        #posicionamento final da chave
+        A[j+1] = chave
 
-    end
+    end#fim da ordenação
     return A
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #---
@@ -41,7 +67,7 @@ end
 #     rpart = mergesort(arr[mid+1:end])
 #     rst = similar(arr)
 #     i = ri = li = 1
-#     @inbounds while li ≤ length(lpart) && ri ≤ length(rpart)
+#    while li ≤ length(lpart) && ri ≤ length(rpart)
 #         if lpart[li] ≤ rpart[ri]
 #             rst[i] = lpart[li]
 #             li += 1
