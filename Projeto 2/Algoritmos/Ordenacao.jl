@@ -3,7 +3,7 @@ module Ordenacao
 using Juno
 
 export insertionsort
-export insertionsort2!
+
 #--- INSERTION SORT
 function insertionsort(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
 

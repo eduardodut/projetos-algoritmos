@@ -4,8 +4,6 @@ using Juno
 export inicializar_variaveis
 
 function inicializar_variaveis(caminho::String)
-
-
     linhas = readlines(caminho)
     parametros_iniciais = split(linhas[1], " ")
     n = parse(Int64, parametros_iniciais[1])
@@ -18,8 +16,6 @@ function inicializar_variaveis(caminho::String)
 
     entrada_matricial = Array{Float64,3}(undef, m, n, n)
 
-
-
     Juno.@progress for i = 1:length(linhas)
         dados = split(linhas[i], " ")
         empresa = parse(Int64, dados[1])
@@ -31,7 +27,7 @@ function inicializar_variaveis(caminho::String)
 
     end # for
 
-    return (entrada_matricial, entrada_vetorial)
+    return (entrada_matricial, entrada_vetorial, m, n)
 
 end # function
 
