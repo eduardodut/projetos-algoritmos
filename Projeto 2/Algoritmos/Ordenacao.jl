@@ -1,11 +1,20 @@
 
-module funcoes_ordenacao
+module Ordenacao
+using Juno
 
-export insertionsort!
+export insertionsort
+export insertionsort2!
+#--- INSERTION SORT
+function insertionsort(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
 
-function insertionsort!(A::Array{Tuple{Int, Int, Int, Float64}}) where {T<:Number}
+    A = copy(vetor_entrada)
 
-    for i = 2:length(A)
+    return insertionsort!(A)
+end
+
+function insertionsort!(A::Array{Tuple{Int64,Int64,Int64,Float64}})
+
+    @inbounds Juno.@progress for i = 2:length(A)
         key = A[i]
         j = i - 1
         while j > 0 && A[j][4] > key[4]
@@ -13,10 +22,14 @@ function insertionsort!(A::Array{Tuple{Int, Int, Int, Float64}}) where {T<:Numbe
             j = j - 1
         end
         A[j+1] = key
+
     end
     return A
-
 end
+
+
+#---
+
 
 #
 #
@@ -82,7 +95,7 @@ end
 #
 # #--- Heapsort
 # swapa(a, i, j) = begin a[i], a[j] = a[j], a[i] end
-#
+# ⇋
 # function pd!(a, first, last)
 #     while (c = 2 * first - 1) < last
 #         if c < last && a[c] < a[c + 1]
