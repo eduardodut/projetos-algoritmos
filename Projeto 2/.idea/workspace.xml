@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="9b971097-501d-433d-985f-2eea69c6da8c" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/Algoritmos/.ipynb_checkpoints/Organizacao_Estrutural-checkpoint.jl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.ipynb_checkpoints/Apresentacao_projeto_2-checkpoint.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/.ipynb_checkpoints/Apresentacao_projeto_2-checkpoint.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Algoritmos/Ordenacao.jl" beforeDir="false" afterPath="$PROJECT_DIR$/Algoritmos/Ordenacao.jl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Apresentacao_projeto_2.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Apresentacao_projeto_2.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Dados/.~lock.dados_n_organizados.csv#" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/projeto 2.jl" beforeDir="false" afterPath="$PROJECT_DIR$/projeto 2.jl" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="ProjectId" id="1dkAsVx98z6Pjhm0st8J37m40eX" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="9b971097-501d-433d-985f-2eea69c6da8c" name="Default Changelist" comment="" />
+      <created>1592958924786</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1592958924786</updated>
+    </task>
+    <servers />
+  </component>
+</project>

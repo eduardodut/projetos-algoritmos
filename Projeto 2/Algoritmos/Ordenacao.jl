@@ -1,8 +1,9 @@
-
 module Ordenacao
-using Juno
 
-export insertionsort
+using Juno
+using Base.Threads: nthreads, @spawn
+
+export insertionsort, mergesort, heapsort, quicksort
 
 #--- INSERTION SORT
 function insertionsort(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
@@ -20,127 +21,258 @@ function insertionsort!(A::Array{Tuple{Int64,Int64,Int64,Float64}})
         #
         j = i - 1
 
-        #comparação do elemento chave e reposicionamento dos elementos maiores
+        #comparação do atributo valor ([4]) do elemento chave com os
+        #valores de contrato dos elementos anteriores e
+        #reposicionamento dos elementos com valores maiores
 
         while j > 0 && A[j][4] > chave[4]
             A[j+1] = A[j]
             j = j - 1
         end
-        #posicionamento final da chave
+        #posicionamento final da chave atual
         A[j+1] = chave
 
     end#fim da ordenação
     return A
 end
+#--- mergesort
+function mergesort_por_empresa(
+    vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}},
+    m::Int64,
+)
+
+    resultado = similar(vetor_entrada)
+
+    vetores_ordenados_por_empresa = similar(vetor_entrada)
+
+    tamanho_array = length(vetor_entrada)
+    m = 100
+    tamanho_array = 726000
+
+    vetor_indices = [1:1:tamanho_array;]
+
+    n_colunas = Int(tamanho_array / m)
+
+    matriz_indices = reshape(vetor_indices, n_colunas, m)
+    matriz_indices[:, 100][1]
+    # entrada_vetorial =
+    # Array{Tuple{Int64,Int64,Int64,Float64}}(undef, length(linhas))
+
+
+    @inbounds for i = 1:m
+        vetores_ordenados_por_empresa[matriz_indices[:, i]] =
+            mergesort(vetor_entrada[matriz_indices[:, i]])
+
+    end
+
+    return mergesort(vetores_ordenados_por_empresa)
+    # vetor_indices = vec(ones(Int64, 1, m))
+    #
+    # lista_empresas = [1:1:m;]
+    #
+    #
+    #
+    # separa_contratos_ordenados_empresas(x::Int64) =
+    #     vetores_ordenados_por_empresa[matriz_indices[:, x]]
+    # empresas_ordenadas = map(separa_contratos_ordenados_empresas, [1:1:m;])
+    #
+    #
+    #
+    # busca_empresa_individual(i) = empresas_ordenadas[i][1][4]
+    # i = 1
+    # while length(lista_empresas) > 1
+    #
+    #
+    #     lista_comparacao = map(busca_empresa_individual, lista_empresas)
+    #
+    #     valor_min, indice = findmin(lista_comparacao)
+    #
+    #     resultado[i] = empresas_ordenadas[indice][1]
+    #
+    #     popfirst!(empresas_ordenadas[indice])
+    #
+    #     if length(empresas_ordenadas) == 0
+    #         delete!(lista_empresas, indice)
+    #     end
+    #
+    #
+    #
+    #     i += 1
+    # end
+    #
+    # resultado[i:end] = empresas_ordenadas[lista_empresas[1]][1:end]
+    #
+    # return resultado
+end
 
 
 
 
+function mergesort(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
+
+    A = copy(vetor_entrada)
+
+    return mergesort!(A)
+end
+
+function mergesort!(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
+
+    # se o vetor de entrada tiver comprimento de 1, retorna ele mesmo
+    if length(vetor_entrada) ≤ 1
+        return vetor_entrada
+    end
+    #calcula o ponto médio do vetor de entrada para sua subdivisão
+
+    p_medio = length(vetor_entrada) ÷ 2
+
+    #chamada de recursão para o vetor da esquerda
+    parte_esquerda = mergesort!(vetor_entrada[1:p_medio])
+    #chamada de recursão para o vetor da direita
+    parte_direita = mergesort!(vetor_entrada[p_medio+1:end])
+    #formata o resultado para ser similar ao vetor de entrada
+    return integrar(parte_esquerda, parte_direita)
+
+
+end
+
+function integrar(
+    parte_esquerda::Array{Tuple{Int64,Int64,Int64,Float64}},
+    parte_direita::Array{Tuple{Int64,Int64,Int64,Float64}},
+)
+    i = indice_direita = indice_esquerda = 1
+    resultado = Array{Tuple{Int64,Int64,Int64,Float64}}(
+        undef,
+        length(parte_direita) + length(parte_esquerda),
+    )
+    #ordenação entre a parte esquerda e parte direita dos subvetores
+    #enquanto não se chegar ao fim de cada vetor, continua comparando até ordenar
+    #os elementos entre os subvetores
+
+    while indice_esquerda ≤ length(parte_esquerda) &&
+        indice_direita ≤ length(parte_direita)
+
+        if parte_esquerda[indice_esquerda][4] ≤ parte_direita[indice_direita][4]
+            # append!(resultado, parte_esquerda[indice_esquerda])
+            resultado[i] = parte_esquerda[indice_esquerda]
+            indice_esquerda += 1
+        else
+            # append!(resultado, parte_direita[indice_direita])
+            resultado[i] = parte_direita[indice_direita]
+            indice_direita += 1
+        end
+        i += 1
+    end
+
+    #Completa o vetor Resultado com o restante dos vetores da direita ou da esquerda
+    #que não foram previamente inseridos.
+
+    #caso o vetor da esquerda tenha sido completamente inserido,
+    #o vetor da direita será integrado ao resultado
+    if indice_esquerda > length(parte_esquerda)
+
+        resultado[i:end] = parte_direita[indice_direita:end]
+
+    else
+        resultado[i:end] = parte_esquerda[indice_esquerda:end]
+    end
+
+    return resultado
+
+end # function
 
 
 
 
+#--- Heapsort
+
+#função auxiliar para realizar a troca de posição entre dois elementos
+function troca_elementos!(
+    vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}},
+    i::Int64,
+    j::Int64,
+)
+    vetor_entrada[i], vetor_entrada[j] = vetor_entrada[j], vetor_entrada[i]
+end
 
 
+function max_heapify!(
+    vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}},
+    first::Int64,
+    last::Int64,
+)   #c = 2*363000-1 = 726599 e last = 726000 na primeira iteração. c referencia elemento de posição à direita do heap
+    @inbounds while (c = 2 * first - 1) < last
+        #se c for anterior a c e o valor do vetor na posição c for menor que o posterior
+        if c < last && vetor_entrada[c][4] < vetor_entrada[c+1][4]
+            #aumenta c em 1 para referenciar a próxima posição, para indicar que o elemento
+            c += 1
+        end
+        #first é 363000 na primeira iteração e c pode referenciar o último ou o penúltimo item, a depender do ultimo "if"
+        if vetor_entrada[first][4] < vetor_entrada[c][4]
+            troca_elementos!(vetor_entrada, c, first)
+            first = c
+        else
+            break
+        end
+    end
+end
+
+function build_max_heap!(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
+
+    #726000÷2 = 363000
+    f = length(vetor_entrada) ÷ 2
+    @inbounds for i in [f:-1:1;]
+        # while f >= 1
+        max_heapify!(vetor_entrada, i, length(vetor_entrada))
+        # f -= 1
+    end
+end
+
+function heapsort!(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
 
 
+    #inicia a construção do primeiro heap max
+    build_max_heap!(vetor_entrada)
+
+    @inbounds for l in [length(vetor_entrada):-1:2;] #
+        #troca a posição do primeiro nó com o último nó do heap
+        troca_elementos!(vetor_entrada, 1, l)
+
+        #reconstitui o heap após o swap do primeiro e ultimo nó pela linha anterior
+        max_heapify!(vetor_entrada, 1, l - 1)
+    end
+
+    return vetor_entrada
+end
 
 
+function heapsort(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
 
+    A = copy(vetor_entrada)
 
-
-
-
-
-
-
-#---
-
-
+    return heapsort!(A)
+end
+#
+# parent_node(i::Int64) = i ÷ 2
+#
+# left(i::Int64) = 2i
+#
+# right(i::Int64) = 2i+1
 #
 #
-# #--- mergesort
-# function mergesort(arr::Vector)
-#     if length(arr) ≤ 1 return arr end
-#     mid = length(arr) ÷ 2
-#     lpart = mergesort(arr[1:mid])
-#     rpart = mergesort(arr[mid+1:end])
-#     rst = similar(arr)
-#     i = ri = li = 1
-#    while li ≤ length(lpart) && ri ≤ length(rpart)
-#         if lpart[li] ≤ rpart[ri]
-#             rst[i] = lpart[li]
-#             li += 1
-#         else
-#             rst[i] = rpart[ri]
-#             ri += 1
-#         end
-#         i += 1
-#     end
-#     if li ≤ length(lpart)
-#         copy!(rst, i, lpart, li)
+# function max_heapfy(A,i)
+#     l = left(i)
+#     r = right(i)
+#     if l <= length(A) && A[l][4] > A[i]
+#         maior = l
 #     else
-#         copy!(rst, i, rpart, ri)
-#     end
-#     return rst
-# end
+#         maior = i
 #
-# #
-# # function mergesort(m)
-# #    var list left, right, result
-# #    if length(m) ≤ 1
-# #        return m
-# #    else
-# #        var middle = length(m) / 2
-# #        for each x in m up to middle - 1
-# #            add x to left
-# #        for each x in m at and after middle
-# #            add x to right
-# #        left = mergesort(left)
-# #        right = mergesort(right)
-# #        if last(left) ≤ first(right)
-# #           append right to left
-# #           return left
-# #        result = merge(left, right)
-# #        return result
-# #
-# # function merge(left,right)
-# #    var list result
-# #    while length(left) > 0 and length(right) > 0
-# #        if first(left) ≤ first(right)
-# #            append first(left) to result
-# #            left = rest(left)
-# #        else
-# #            append first(right) to result
-# #            right = rest(right)
-# #    if length(left) > 0
-# #        append rest(left) to result
-# #    if length(right) > 0
-# #        append rest(right) to result
-# #    return result
 #
-# #--- Heapsort
-# swapa(a, i, j) = begin a[i], a[j] = a[j], a[i] end
-# ⇋
-# function pd!(a, first, last)
-#     while (c = 2 * first - 1) < last
-#         if c < last && a[c] < a[c + 1]
-#             c += 1
-#         end
-#         if a[first] < a[c]
-#             swapa(a, c, first)
-#             first = c
-#         else
-#             break
-#         end
-#     end
-# end
-#
-# heapify!(a, n) = (f = div(n, 2); while f >= 1 pd!(a, f, n); f -= 1 end)
-#
-# heapsort!(a) = (n = length(a); heapify!(a, n); l = n; while l > 1 swapa(a, 1, l); l -= 1; pd!(a, 1, l) end; a)
-#
-# a = shuffle(collect(1:12))
+# end # function
+
+
+
+
 #
 # # Pseudocode:
 #
@@ -190,61 +322,43 @@ end
 #
 # #--- Quicksort
 #
-# function quicksort!(A,i=1,j=length(A))
-#     if j > i
-#         pivot = A[rand(i:j)] # random element of A
-#         left, right = i, j
-#         while left <= right
-#             while A[left] < pivot
-#                 left += 1
-#             end
-#             while A[right] > pivot
-#                 right -= 1
-#             end
-#             if left <= right
-#                 A[left], A[right] = A[right], A[left]
-#                 left += 1
-#                 right -= 1
-#             end
-#         end
-#         quicksort!(A,i,right)
-#         quicksort!(A,left,j)
-#     end
-#     return A
-# end
-#
-#
-# # This is a simple quicksort algorithm, adapted from Wikipedia.
-# #
-# # function quicksort(array)
-# #     less, equal, greater := three empty arrays
-# #     if length(array) > 1
-# #         pivot := select any element of array
-# #         for each x in array
-# #             if x < pivot then add x to less
-# #             if x = pivot then add x to equal
-# #             if x > pivot then add x to greater
-# #         quicksort(less)
-# #         quicksort(greater)
-# #         array := concatenate(less, equal, greater)
-# # A better quicksort algorithm works in place, by swapping elements within the array, to avoid the memory allocation of more arrays.
-# #
-# # function quicksort(array)
-# #     if length(array) > 1
-# #         pivot := select any element of array
-# #         left := first index of array
-# #         right := last index of array
-# #         while left ≤ right
-# #             while array[left] < pivot
-# #                 left := left + 1
-# #             while array[right] > pivot
-# #                 right := right - 1
-# #             if left ≤ right
-# #                 swap array[left] with array[right]
-# #                 left := left + 1
-# #                 right := right - 1
-# #         quicksort(array from first index to right)
-# #         quicksort(array from left to last index)
-#
-#
+function quicksort!(
+    vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}},
+    i::Int64,
+    j::Int64,
+)
+    if j > i
+        pivô = vetor_entrada[rand(i:j)] # elemento aleatório do vetor
+        esquerda, direita = i, j
+        while esquerda <= direita
+            while vetor_entrada[esquerda][4] < pivô[4]
+                esquerda += 1
+            end
+            while vetor_entrada[direita][4] > pivô[4]
+                direita -= 1
+            end
+            if esquerda <= direita
+                troca_elementos!(vetor_entrada, esquerda, direita)
+
+                esquerda += 1
+                direita -= 1
+            end
+        end
+        quicksort!(vetor_entrada, i, direita)
+        quicksort!(vetor_entrada, esquerda, j)
+    end
+
+    return vetor_entrada
+end
+
+
+
+function quicksort(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
+
+    A = copy(vetor_entrada)
+
+    return quicksort!(A, 1, length(A))
+end
+
+
 end#module
