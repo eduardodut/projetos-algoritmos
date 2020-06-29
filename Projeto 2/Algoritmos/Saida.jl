@@ -6,6 +6,9 @@ export escreve_arquivo_saida
 
 documentation
 """
+
+
+
 function escreve_arquivo_saida(
     caminho_saida::String,
     dados::Array{Tuple{Int64,Int64,Int64,Float64}},

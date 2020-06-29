@@ -1,9 +1,20 @@
 module Ordenacao
+include("Inicializacao.jl")
+include("Arvores_Recursivas.jl")
 
-using Juno
-using Base.Threads: nthreads, @spawn
+using Juno, Statistics, BenchmarkTools
 
-export insertionsort, mergesort, heapsort, quicksort
+using Base.Threads: nthreads, @spawn, @sync, @threads
+
+export insertionsort,
+    mergesort,
+    heapsort,
+    quicksort,
+    teste_ordenacao,
+    custom_sort,
+    custom_sort2,
+    merge_vetores_ordenados,
+    ordenar
 
 #--- INSERTION SORT
 function insertionsort(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
@@ -130,6 +141,7 @@ function mergesort!(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
     #chamada de recursão para o vetor da direita
     parte_direita = mergesort!(vetor_entrada[p_medio+1:end])
     #formata o resultado para ser similar ao vetor de entrada
+
     return integrar(parte_esquerda, parte_direita)
 
 
@@ -186,7 +198,7 @@ end # function
 #--- Heapsort
 
 #função auxiliar para realizar a troca de posição entre dois elementos
-function troca_elementos!(
+@inline function troca_elementos!(
     vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}},
     i::Int64,
     j::Int64,
@@ -197,24 +209,25 @@ end
 
 function max_heapify!(
     vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}},
-    first::Int64,
-    last::Int64,
+    primeiro::Int64,
+    ultimo::Int64,
 )   #c = 2*363000-1 = 726599 e last = 726000 na primeira iteração. c referencia elemento de posição à direita do heap
-    @inbounds while (c = 2 * first - 1) < last
+    @inbounds while (c = 2 * primeiro - 1) < ultimo
         #se c for anterior a c e o valor do vetor na posição c for menor que o posterior
-        if c < last && vetor_entrada[c][4] < vetor_entrada[c+1][4]
+        if c < ultimo && vetor_entrada[c][4] < vetor_entrada[c+1][4]
             #aumenta c em 1 para referenciar a próxima posição, para indicar que o elemento
             c += 1
         end
         #first é 363000 na primeira iteração e c pode referenciar o último ou o penúltimo item, a depender do ultimo "if"
-        if vetor_entrada[first][4] < vetor_entrada[c][4]
-            troca_elementos!(vetor_entrada, c, first)
-            first = c
+        if vetor_entrada[primeiro][4] < vetor_entrada[c][4]
+            troca_elementos!(vetor_entrada, c, primeiro)
+            primeiro = c
         else
             break
         end
     end
 end
+
 
 function build_max_heap!(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
 
@@ -251,77 +264,12 @@ function heapsort(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
 
     return heapsort!(A)
 end
-#
-# parent_node(i::Int64) = i ÷ 2
-#
-# left(i::Int64) = 2i
-#
-# right(i::Int64) = 2i+1
-#
-#
-# function max_heapfy(A,i)
-#     l = left(i)
-#     r = right(i)
-#     if l <= length(A) && A[l][4] > A[i]
-#         maior = l
-#     else
-#         maior = i
-#
-#
-# end # function
 
 
-
-
-#
-# # Pseudocode:
-#
-# # function heapSort(a, count) is
-# #    input: an unordered array a of length count
-# #
-# #    (first place a in max-heap order)
-# #    heapify(a, count)
-# #
-# #    end := count - 1
-# #    while end > 0 do
-# #       (swap the root(maximum value) of the heap with the
-# #        last element of the heap)
-# #       swap(a[end], a[0])
-# #       (decrement the size of the heap so that the previous
-# #        max value will stay in its proper place)
-# #       end := end - 1
-# #       (put the heap back in max-heap order)
-# #       siftDown(a, 0, end)
-# #
-# # function heapify(a,count) is
-# #    (start is assigned the index in a of the last parent node)
-# #    start := (count - 2) / 2
-# #
-# #    while start ≥ 0 do
-# #       (sift down the node at index start to the proper place
-# #        such that all nodes below the start index are in heap
-# #        order)
-# #       siftDown(a, start, count-1)
-# #       start := start - 1
-# #    (after sifting down the root all nodes/elements are in heap order)
-# #
-# # function siftDown(a, start, end) is
-# #    (end represents the limit of how far down the heap to sift)
-# #    root := start
-# #
-# #    while root * 2 + 1 ≤ end do       (While the root has at least one child)
-# #       child := root * 2 + 1           (root*2+1 points to the left child)
-# #       (If the child has a sibling and the child's value is less than its sibling's...)
-# #       if child + 1 ≤ end and a[child] < a[child + 1] then
-# #          child := child + 1           (... then point to the right child instead)
-# #       if a[root] < a[child] then     (out of max-heap order)
-# #          swap(a[root], a[child])
-# #          root := child                (repeat to continue sifting down the child now)
-# #       else
-# #          return
-#
 # #--- Quicksort
 #
+
+
 function quicksort!(
     vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}},
     i::Int64,
@@ -344,8 +292,10 @@ function quicksort!(
                 direita -= 1
             end
         end
+        # t = @spawn
         quicksort!(vetor_entrada, i, direita)
         quicksort!(vetor_entrada, esquerda, j)
+        # fetch(t)
     end
 
     return vetor_entrada
@@ -353,12 +303,371 @@ end
 
 
 
-function quicksort(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
+function quicksort(
+    vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}},
+    otimo::Bool = false,
+)
 
     A = copy(vetor_entrada)
 
-    return quicksort!(A, 1, length(A))
+    otimo == true ? (return quicksort_otimizado!(A, 1, length(A))) :
+    (return quicksort!(A, 1, length(A)))
+
+
+
 end
 
+function quicksort_otimizado!(
+    vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}},
+    i::Int64,
+    j::Int64,
+)
+
+    if j > i
+        # (726000 -1)÷ 2 + 1
+        indice_pivô = (j - i) ÷ 2 + 1 #mediana do vetor
+        pivô = vetor_entrada[indice_pivô] # elemento aleatório do vetor
+
+        esquerda, direita = i, j
+        while esquerda <= direita
+
+            while vetor_entrada[esquerda][4] < pivô[4]
+                esquerda += 1
+            end
+            while vetor_entrada[direita][4] > pivô[4]
+                direita -= 1
+            end
+            if esquerda <= direita
+                troca_elementos!(vetor_entrada, esquerda, direita)
+
+                esquerda += 1
+                direita -= 1
+            end
+        end
+        # t = @spawn
+        quicksort!(vetor_entrada, i, direita)
+        quicksort!(vetor_entrada, esquerda, j)
+        # fetch(t)
+    end
+
+    return vetor_entrada
+end
+
+function teste_ordenacao(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
+    aux = vetor_entrada[1][4]
+    i = 2
+    j = length(vetor_entrada)
+    while i < j
+        valor_atual = vetor_entrada[i][4]
+        if valor_atual >= aux
+            aux = valor_atual
+        else
+            break
+        end
+        i += 1
+    end
+
+    return i == j
+end
+
+
+"""
+    sort_divide_conquer(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
+
+divide o problema em 100(m) partes e aplica o algoritmo selecionado
+"""
+function sort_divide_conquer(
+    vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}},
+    m::Int64,
+)
+
+    resultado = similar(vetor_entrada)
+
+
+    tamanho_array = length(vetor_entrada)
+    m = 100
+    tamanho_array = 726000
+
+    vetor_indices = [1:1:tamanho_array;]
+
+    n_colunas = Int(tamanho_array / m)
+
+    matriz_indices = reshape(vetor_indices, n_colunas, m)
+    matriz_indices[:, 100][1]
+    # entrada_vetorial =
+    # Array{Tuple{Int64,Int64,Int64,Float64}}(undef, length(linhas))
+
+
+    @inbounds for i = 1:m
+        vetores_ordenados_por_empresa[matriz_indices[:, i]] =
+            mergesort(vetor_entrada[matriz_indices[:, i]])
+
+    end
+
+
+
+end # function
+#---Ordenação questão k
+function ordenar(
+    entrada_matricial::Array{Float64,3},
+)::Vector{Tuple{Int64,Int64,Int64,Float64}}
+    arvore_3D = Arvores_Binarias.Arvore_Binaria_3D(entrada_matricial)
+    saida =
+        Vector{Tuple{Int64,Int64,Int64,Float64}}(undef, arvore_3D.qtd_contratos)
+
+    for i in [length(saida):-1:1;]
+        saida[i] = Arvores_Binarias.proximo_item!(arvore_3D)
+    end
+
+    return saida
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function find_amax(vec::Vector{Array{Tuple{Int64,Int64,Int64,Float64},1}})
+    m = length(vec)
+    arr = Array{Tuple{Int64,Int64,Int64,Float64},1}(undef, m)
+    for empresa = 1:m
+        if length(vec[empresa]) > 0
+            arr[empresa] = vec[empresa][1]
+        else
+            arr[empresa] = (1, 1, 1, -Inf)
+        end
+    end
+    maxind, maxval = firstindex(arr), first(arr)[4]
+    for (i, x) in enumerate(arr)
+        if x[4] > maxval
+            maxind, maxval = i, x[4]
+        end
+    end
+    return maxind, arr[maxind]
+end
+
+Base.copy(x::Tuple{Int64,Int64,Int64,Float64}) =
+    (copy(x[1]), copy(x[2]), copy(x[3]), copy(x[4]))
+
+function find_amin(
+    vec::Vector{Array{Tuple{Int64,Int64,Int64,Float64},1}},
+    indice_menor_elemento::Vector{Int64},
+)
+    m = length(vec)
+    arr = Array{Tuple{Int64,Int64,Int64,Float64},1}(undef, m)
+    for (empresa, menor_valor) in enumerate(indice_menor_elemento)
+        if menor_valor <= length(vec[empresa])
+            arr[empresa] = vec[empresa][menor_valor]
+        else
+            arr[empresa] = (1, 1, 1, Inf)
+        end
+    end
+
+    minind, minval = firstindex(arr), first(arr)[4]
+    for (i, x) in enumerate(arr)
+        if x[4] < minval
+            minind, minval = i, x[4]
+        end
+    end
+
+    return minind, arr[minind]
+end
+
+
+
+
+
+function custom_sort(
+    vetor_entrada::Vector{Tuple{Int64,Int64,Int64,Float64}},
+    m::Int64,
+    n::Int64,
+)
+    #cópia do vetor de entrada
+    vetor_copia = copy(vetor_entrada)
+    #instanciamento da matriz de índices
+    # matriz_indices = matrix_indices(true, m, n)
+    #instanciamento do vetor de saída
+
+    #conjunto de heaps_max
+    # conjunto_heap_max = copy(vetor_copia[matriz_indices])
+    #vetor que rastreia o número de elementos de cada heap que ainda não foi copiado
+
+    # j = length(saida)
+    a = Vector{Vector{Tuple{Int64,Int64,Int64,Float64}}}(undef, m)
+    n_contratos = Int64(n * (n + 1) / 2)
+
+    tarefas = Array{Task}(undef, m)
+
+    for i in [1:1:m;]
+        c = (i - 1) * n_contratos
+        # indices_empresa = [n_contratos+c:-1:1+c;]
+        indices_empresa = [1+c:1:n_contratos+c;]
+        # aux = Vector{Tuple{Int64,Int64,Int64,Float64}}(undef, n_contratos)
+        a[i] = heapsort(vetor_copia[indices_empresa])
+
+        # a[i] = vetor_copia[indices_empresa]
+        # tarefas[i] = @spawn insertionsort(vetor_copia[indices_empresa])
+
+    end
+
+    # for (i, tarefa) in enumerate(tarefas)
+    #     a[i] = fetch(tarefa)
+    # end
+
+    # @sync map(fetch, t)
+
+    return merge_vetores_ordenados(a)
+end
+
+
+function merge_vetores_ordenados(
+    vetor_entrada::Vector{Vector{Tuple{Int64,Int64,Int64,Float64}}},
+)
+    numero_vetores = size(vetor_entrada)[1]
+    tamanho_subvetor = size(vetor_entrada[1])[1]
+    tamanho_saida = Int64(numero_vetores * tamanho_subvetor)
+    saida = Vector{Tuple{Int64,Int64,Int64,Float64}}(undef, tamanho_saida)
+    lista_indice_menor_elemento = ones(Int64, numero_vetores) #* Int64(n * (n + 1) / 2)
+    for i = 1:tamanho_saida
+
+        #encontra o heap com maior raiz: o maior contrato de cada empresa
+        indice_menor_contrato, menor_contrato =
+            find_amin(vetor_entrada, lista_indice_menor_elemento)
+        #ordenada na ultima posição dispnível o maior contrato do heap selecionado
+        saida[i] = menor_contrato
+        lista_indice_menor_elemento[menor_contrato[1]] += 1
+
+    end
+
+    return saida
+
+end
+
+
+
+function custom_sort2(
+    vetor_entrada::Vector{Tuple{Int64,Int64,Int64,Float64}},
+    m::Int64,
+    n::Int64,
+)
+    #cópia do vetor de entrada
+    vetor_copia = copy(vetor_entrada)
+    #instanciamento do vetor de saída
+    saida = similar(vetor_entrada)
+
+    n_contratos = Int64(n * (n + 1) / 2)
+    #conjunto de heaps_max
+    # conjunto_heap_max = vetor_copia[matriz_indices]
+    #vetor que rastreia o número de elementos de cada heap que ainda não foi copiado
+
+    #variável que referencia a posição no vetor de saída que será escrita dentro do loop
+    j = length(saida)
+    conjunto_arvores = Vector{Estrutura.Arvore_Binaria}(undef, m)
+    b = Vector{Bool}(undef, 100)
+    #construção do conjuto de árvores binárias
+    @inbounds for i in [1:1:m;]# for 1
+        c = (i - 1) * n_contratos
+        indices_empresa = [n_contratos+c:-1:1+c;]
+        # indices_empresa = [1+c:1:n_contratos+c;]
+        aux = Vector{Tuple{Int64,Int64,Int64,Float64}}(undef, j)
+        aux = vetor_copia[indices_empresa]
+        build_max_heap!(aux)
+        # b[1] = (aux == build_max_heap!(aux))
+
+        conjunto_arvores[i] = Estrutura.Arvore_Binaria(aux)
+    end#for 1
+
+    indices_vetor_saida = [j:-1:1;]
+    # loop responsável por realizar o merge dos heaps a medida que os reconstitui
+    Juno.@progress for i in indices_vetor_saida #for 2
+        #encontra o heap com maior raiz: o maior contrato de cada empresa
+
+        #itera sobre todas as árvores para buscar o maior valor entre as raízes
+        indice_max = 1
+        maior_contrato = conjunto_arvores[1].raiz
+        for k = 2:m
+            if conjunto_arvores[k].raiz[4] > maior_contrato[4]
+                indice_max = k
+                maior_contrato = conjunto_arvores[k].raiz
+            end#if
+        end#for
+
+        saida[i] = Estrutura.ceifar!(conjunto_arvores[indice_max])
+
+
+
+    end#for 2
+
+    return saida
+end
+
+
+function custom_heapsort!(
+    vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}},
+)
+
+    @inbounds for l in [length(vetor_entrada):-1:2;] #
+        #troca a posição do primeiro nó com o último nó do heap
+        troca_elementos!(vetor_entrada, 1, l)
+
+        #reconstitui o heap após o swap do primeiro e ultimo nó pela linha anterior
+        max_heapify!(vetor_entrada, 1, l - 1)
+    end
+
+    return vetor_entrada
+end
+
+
+
+
+
+
+
+
+
+#função para criar uma matriz de índices para separar os contratos pelas respctivas empresas
+# function matrix_indices(inverter::Bool = false, m::Int64 = 100, n::Int64 = 120)
+#
+#     tamanho_array = Int(m * n * (n + 1) / 2)
+#
+#     vetor_indices = [1:1:tamanho_array;]
+#
+#     n_colunas = Int(tamanho_array / m)
+#
+#     if inverter == true
+#         vetor_indices = reverse(vetor_indices)
+#     end
+#
+#     return reverse(reshape(vetor_indices, n_colunas, m), dims = 2)
+#
+# end
 
 end#module

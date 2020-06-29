@@ -1,19 +1,25 @@
-
 include("Algoritmos/Ordenacao.jl")
-include("Algoritmos/Organizacao_Estrutural.jl")
+include("Algoritmos/Ordenacao_Estrutural.jl")
 include("Algoritmos/Inicializacao.jl")
 include("Algoritmos/Saida.jl")
 include("Algoritmos/Grafico.jl")
+include("Algoritmos/Arvores_Recursivas.jl")
 using BenchmarkTools, Juno, DataFrames
 using Base.Threads: nthreads, @spawn
 
 
 
 #--- Inicialização das variáveis
-entrada_matricial, entrada_vetorizada, m, n =
-    Inicializacao.inicializar_variaveis("Dados/entrada.txt")
+var = Inicializacao.inicializar_variaveis("Dados/entrada.txt")
+const entrada_matricial = var[1]
+const entrada_vetorizada = var[2]
+const m = var[3]
+const n = var[4]
+
+
 
 plot_entrada = Grafico.plotar(entrada_vetorizada, "Entrada.txt")
+
 
 
 #--- Insertion sort
@@ -21,9 +27,12 @@ plot_entrada = Grafico.plotar(entrada_vetorizada, "Entrada.txt")
 
 
 tempo_insertion_sort = @elapsed ordenado_insertion_sort =
-    Ordenacao.insertionsort(entrada_vetorizada)
+    @benchmark Ordenacao.insertionsort(entrada_vetorizada[1:7260])
 
-
+print(
+    Ordenacao.teste_ordenacao(ordenado_insertion_sort) ? "Ordenado" :
+    "Não ordenado",
+)
 plot_indices_ordenados =
     Grafico.plotar(ordenado_insertion_sort, "Insertion sort")
 show(plot_insertion_sort)
@@ -37,15 +46,13 @@ Saida.escreve_arquivo_saida(
 #---Merge sort
 # # Θ(mn²log(mn²))
 
-benchmark_mergesort =
-    @benchmark ordenado_merge_sort = Ordenacao.mergesort(entrada_vetorizada)
-
+benchmark_mergesort = @benchmark ordenado_merge_sort =
+    Ordenacao.mergesort(entrada_vetorizada)
 
 print(
     "Está ordenado? ",
-    issorted(DataFrame(ordenado_merge_sort)[!, 4]) ? "sim" : "não",
+    Ordenacao.teste_ordenacao(ordenado_merge_sort) ? "sim" : "não",
 )
-DataFrame(ordenado_heap_sort)[!, 4] == DataFrame(ordenado_merge_sort)[!, 4]
 
 plot_indices_ordenados = Grafico.plotar(ordenado_merge_sort, "merge sort")
 
@@ -55,20 +62,37 @@ Saida.escreve_arquivo_saida(
     true,
 )
 #--- Heapsort
-
-
+a = reverse(entrada_vetorizada[1:7260])
 benchmark_heapsort =
     @benchmark ordenado_heap_sort = Ordenacao.heapsort(entrada_vetorizada)
 
 print(
     "Está ordenado? ",
-    issorted(DataFrame(ordenado_heap_sort)[!, 4]) ? "sim" : "não",
+    Ordenacao.teste_ordenacao(ordenado_heap_sort) ? "sim" : "não",
 )
+
+
+
 
 #---Quicksort
 
 benchmark_quicksort =
     @benchmark ordenado_quick_sort = Ordenacao.quicksort(entrada_vetorizada)
+
+print(
+    Ordenacao.teste_ordenacao(ordenado_quick_sort) ? "Ordenado" :
+    "Não ordenado",
+)
+
+#--- letra k)
+
+benchmark_ordenacao =
+    @benchmark ordenado_quick_sort = Ordenacao.ordenar(entrada_matricial)
+
+print(
+    Ordenacao.teste_ordenacao(ordenado_quick_sort) ? "Ordenado" :
+    "Não ordenado",
+)
 
 
 
@@ -76,8 +100,14 @@ benchmark_quicksort =
 
 ##--- Pre organização do arquivo
 
-@benchmark entrada_vetorial_pre_organizada =
-    Ordenacao_Estrutural.organizar_indices(entrada_vetorizada, n, m)
+benchmark_preorganizacao = @benchmark entrada_vetorial_pre_organizada =
+                                Ordenacao_Estrutural.organizar_indices(entrada_vetorizada)
+
+print(
+    Ordenacao.teste_ordenacao(entrada_vetorial_pre_organizada) ? "Ordenado" :
+    "Não ordenado",
+)
+
 
 plot_indices_ordenados =
     Grafico.plotar(entrada_vetorial_pre_organizada, "Índices ordenados")
@@ -132,10 +162,11 @@ benchmark_heapsort_otimizado = @benchmark ordenado_heap_sort_otimizado =
 
 quick_sort_otimizado(
     entrada_vetorizada::Array{Tuple{Int64,Int64,Int64,Float64}},
-) =
-    Ordenacao_Estrutural.organizar_indices(entrada_vetorizada, n, m) |>
-    reverse |>
-    Ordenacao.quicksort
+) = Ordenacao.quicksort(
+    Ordenacao_Estrutural.organizar_indices(entrada_vetorizada),
+    true,
+)
+
 
 benchmark_quicksort_otimizado = @benchmark ordenado_quick_sort_otimizado =
     quick_sort_otimizado(entrada_vetorizada)
