@@ -57,12 +57,12 @@ function mergesort!(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
     p_medio = length(vetor_entrada) ÷ 2
 
     #chamada de recursão para o vetor da esquerda
-    t = @spawn mergesort!(vetor_entrada[1:p_medio])
+    parte_esquerda = mergesort!(vetor_entrada[1:p_medio])
     # parte_esquerda = mergesort!(vetor_entrada[1:p_medio])
     #chamada de recursão para o vetor da direita
     parte_direita = mergesort!(vetor_entrada[p_medio+1:end])
     #formata o resultado para ser similar ao vetor de entrada
-    parte_esquerda = fetch(t)
+
     return integrar(parte_esquerda, parte_direita)
 
 
@@ -128,51 +128,28 @@ end # function
 end
 
 
-# function max_heapify!(
-#     vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}},
-#     primeiro::Int64,
-#     ultimo::Int64,
-# )   #c = 2*363000-1 = 726599 e last = 726000 na primeira iteração. c referencia elemento de posição à direita do heap
-#     # c = 2 * primeiro - 1
-#     @inbounds while (c = 2 * primeiro - 1) < ultimo
-#     # while c < ultimo
-#         #se c for anterior a c e o valor do vetor na posição c for menor que o posterior
-#         #                              1                      2
-#         if c < ultimo && vetor_entrada[c][4] < vetor_entrada[c+1][4]
-#             #aumenta c em 1 para referenciar a próxima posição, para indicar que o elemento
-#             c += 1
-#         end
-#         #first é 363000 na primeira iteração e c pode referenciar o último ou o penúltimo item, a depender do ultimo "if"
-#                             # 1                       1 ou 2
-#         if vetor_entrada[primeiro][4] < vetor_entrada[c][4]
-#             troca_elementos!(vetor_entrada, c, primeiro)
-#             primeiro = c
-#         else
-#             break
-#         end
-#     end
-# end
-
 function max_heapify!(
     vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}},
-    i::Int64,
+    pai::Int64,
     tam_heap::Int64,
 )
-    maior = i
-    l = 2 * i
-    r = 2 * i + 1
-    # tam_heap = length(vetor_entrada)
+    maior = pai
+    filho_esquerda = 2 * pai
+    filho_direita = 2 * pai + 1
 
-    if l <= tam_heap && vetor_entrada[l][4] > vetor_entrada[i][4]
-        maior = l
-    else
-        maior = i
+
+    if filho_esquerda <= tam_heap &&
+       vetor_entrada[filho_esquerda][4] > vetor_entrada[pai][4]
+        maior = filho_esquerda
     end
-    if r <= tam_heap && vetor_entrada[r][4] > vetor_entrada[maior][4]
-        maior = r
+
+    if filho_direita <= tam_heap &&
+       vetor_entrada[filho_direita][4] > vetor_entrada[maior][4]
+        maior = filho_direita
     end
-    if maior != i
-        troca_elementos!(vetor_entrada, i, maior)
+
+    if maior != pai
+        troca_elementos!(vetor_entrada, pai, maior)#maior = 2 * i ou  2 * i + 1
         max_heapify!(vetor_entrada, maior, tam_heap)
     end
 end
@@ -181,18 +158,15 @@ end
 
 function build_max_heap!(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
 
-    #726000÷2 = 363000
+
     f = length(vetor_entrada) ÷ 2
     @inbounds for i in [f:-1:1;]
-        # while f >= 1
-        # max_heapify!(vetor_entrada, i, length(vetor_entrada))
         max_heapify!(vetor_entrada, i, length(vetor_entrada))
-        # f -= 1
+
     end
 end
 
 function heapsort!(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
-
 
     #inicia a construção do primeiro heap max
     build_max_heap!(vetor_entrada)
@@ -202,7 +176,6 @@ function heapsort!(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
         troca_elementos!(vetor_entrada, 1, i)
         tam_heap -= 1
         #reconstitui o heap após o swap do primeiro e ultimo nó pela linha anterior
-        # max_heapify!(vetor_entrada, 1, i - 1)
         max_heapify!(vetor_entrada, 1, tam_heap)
     end
 
@@ -301,13 +274,6 @@ function dividir_e_ordenar2(
             1+(i-1)*n_elementos_por_vetor:1:n_elementos_por_vetor+(i-1)*n_elementos_por_vetor;
         ]
     end
-
-    # vetor_indices = [
-    #     [
-    #         1+(i-1)*n_elementos_por_vetor:1:n_elementos_por_vetor+(i-1)*n_elementos_por_vetor;
-    #     ] for i = 1:k-1
-    # ]
-
     vetor_indices[k] = [
         vetor_indices[k-1][end]+1:1:vetor_indices[k-1][end]+n_elementos_ultimo_vetor;
     ]
@@ -339,7 +305,7 @@ end
 function intercalar_k_vetores_ordenados(
     vetores::Array{Array{Tuple{Int64,Int64,Int64,Float64},1},1},
 )::Vector{Tuple{Int64,Int64,Int64,Float64}}
-    m = length(vetores)
+    k = length(vetores)
     # tamanho_saida = m * length(vetores[1])
     tamanho_saida = sum(length.(vetores))
 
@@ -351,10 +317,10 @@ function intercalar_k_vetores_ordenados(
         saida[i] = popfirst!(vetores)
         if length(vetores[1]) == 0
             vetores[1] = [(0, 0, 0, Float64(Inf64))]
-            troca_elementos!(vetores, 1, m)
+            troca_elementos!(vetores, 1, k)
         end
 
-        min_heapify!(vetores, 1, m)
+        min_heapify!(vetores, 1, k)
     end
     return saida
 end
@@ -373,28 +339,31 @@ Base.popfirst!(x::Vector{Vector{Tuple{Int64,Int64,Int64,Float64}}}) =
 end
 
 
-
 function min_heapify!(
     vetor_entrada::Array{Array{Tuple{Int64,Int64,Int64,Float64},1},1},
-    primeiro::Int64,
-    ultimo::Int64,
+    pai::Int64,
+    tam_heap::Int64,
 )
-    @inbounds while (c = 2 * primeiro - 1) < ultimo
-        #se c for anterior a c e o valor do vetor na posição c for menor que o posterior
-        if c < ultimo && vetor_entrada[c] > vetor_entrada[c+1]
-            #aumenta c em 1 para referenciar a próxima posição, para indicar que o elemento
-            c += 1
-        end
-        #first é 363000 na primeira iteração e c pode referenciar o último ou o penúltimo item, a depender do ultimo "if"
-        if vetor_entrada[primeiro] > vetor_entrada[c]
-            troca_elementos!(vetor_entrada, c, primeiro)
-            primeiro = c
-        else
-            break
-        end
+    menor = pai
+    filho_esquerda = 2 * pai
+    filho_direita = 2 * pai + 1
+
+
+    if filho_esquerda <= tam_heap &&
+       vetor_entrada[filho_esquerda] < vetor_entrada[pai]
+        menor = filho_esquerda
+    end
+
+    if filho_direita <= tam_heap &&
+       vetor_entrada[filho_direita] < vetor_entrada[menor]
+        menor = filho_direita
+    end
+
+    if menor != pai
+        troca_elementos!(vetor_entrada, pai, menor)#maior = 2 * i ou  2 * i + 1
+        min_heapify!(vetor_entrada, menor, tam_heap)
     end
 end
-
 
 function build_min_heap!(
     vetor_entrada::Array{Array{Tuple{Int64,Int64,Int64,Float64},1},1},
