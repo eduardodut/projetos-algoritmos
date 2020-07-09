@@ -1,5 +1,5 @@
 module Saida
-using Juno, Formatting
+using Juno, Formatting, Statistics
 export escreve_arquivo_saida
 """
     escreve_arquivo_saida(caminho_saida::String, dados::Array{Tuple{Int64,Int64,Int64,Float64}})
@@ -25,15 +25,27 @@ function escreve_arquivo_saida(
         println(io, i[1], " ", i[2], " ", i[3], " ", valor)
     end
     close(io)
-
-
-
-
 end # function
 
 
+function formata_ms(array::Array{Float64,1})::String
+
+    return formata_casas_decimais(mean(array) / 1e6)
+
+end
+
+function formata_s(array::Array{Float64,1})::String
+
+    return formata_casas_decimais(mean(array) / 1e9)
+
+end
 
 
+function formata_casas_decimais(num::Float64)::String
+    fmt = "%11.2f"
+    return lstrip(sprintf1(fmt, num))
+
+end
 
 
 end  # module od

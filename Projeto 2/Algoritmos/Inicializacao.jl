@@ -18,7 +18,8 @@ function inicializar_variaveis(caminho::String)
     #     Array{Tuple{Int64,Int64,Int64,Float64},3}(undef, m, n, n)
 
     entrada_matricial = Array{Float64}(undef, m, n, n)
-
+    entrada_matricial_completa =
+        Array{Tuple{Int64,Int64,Int64,Float64}}(undef, m, n, n)
     i = 1
 
     Juno.@progress for linha in linhas
@@ -33,10 +34,19 @@ function inicializar_variaveis(caminho::String)
         #     (empresa, mes_inicial, mes_final, valor)
 
         entrada_matricial[empresa, mes_inicial, mes_final] = valor
+
+        entrada_matricial_completa[empresa, mes_inicial, mes_final] =
+            (empresa, mes_inicial, mes_final, valor)
         i += 1
     end # for
 
-    return (entrada_matricial, entrada_vetorial, m, n)
+    return (
+        entrada_matricial,
+        entrada_vetorial,
+        entrada_matricial_completa,
+        m,
+        n,
+    )
 
 end # function
 

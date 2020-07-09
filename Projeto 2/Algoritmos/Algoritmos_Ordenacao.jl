@@ -1,28 +1,16 @@
 module Algoritmos_Ordenacao
-include("Inicializacao.jl")
-include("Arvores_Recursivas.jl")
 using Juno
 import Base.Threads.@spawn
 export insertionsort,
-    mergesort,
-    heapsort,
-    quicksort,
+    mergesort!,
+    heapsort!,
     quicksort!,
-    teste_ordenacao,
-    custom_sort,
-    custom_sort2,
     dividir_e_ordenar,
-    ordenacao_heap_2D,
+    dividir_e_ordenar2,
+    intercalacao_heap_max,
     intercalar_k_vetores_ordenados
 
 #--- INSERTION SORT
-function insertionsort(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
-
-    A = copy(vetor_entrada)
-
-    return insertionsort!(A)
-end
-
 function insertionsort!(A::Array{Tuple{Int64,Int64,Int64,Float64}})
 
     for i = 2:length(A)
@@ -39,7 +27,10 @@ function insertionsort!(A::Array{Tuple{Int64,Int64,Int64,Float64}})
             A[j+1] = A[j]
             j = j - 1
         end
+
+
         #posicionamento final da chave atual
+
         A[j+1] = chave
 
     end#fim da ordenação
@@ -137,26 +128,55 @@ end # function
 end
 
 
+# function max_heapify!(
+#     vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}},
+#     primeiro::Int64,
+#     ultimo::Int64,
+# )   #c = 2*363000-1 = 726599 e last = 726000 na primeira iteração. c referencia elemento de posição à direita do heap
+#     # c = 2 * primeiro - 1
+#     @inbounds while (c = 2 * primeiro - 1) < ultimo
+#     # while c < ultimo
+#         #se c for anterior a c e o valor do vetor na posição c for menor que o posterior
+#         #                              1                      2
+#         if c < ultimo && vetor_entrada[c][4] < vetor_entrada[c+1][4]
+#             #aumenta c em 1 para referenciar a próxima posição, para indicar que o elemento
+#             c += 1
+#         end
+#         #first é 363000 na primeira iteração e c pode referenciar o último ou o penúltimo item, a depender do ultimo "if"
+#                             # 1                       1 ou 2
+#         if vetor_entrada[primeiro][4] < vetor_entrada[c][4]
+#             troca_elementos!(vetor_entrada, c, primeiro)
+#             primeiro = c
+#         else
+#             break
+#         end
+#     end
+# end
+
 function max_heapify!(
     vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}},
-    primeiro::Int64,
-    ultimo::Int64,
-)   #c = 2*363000-1 = 726599 e last = 726000 na primeira iteração. c referencia elemento de posição à direita do heap
-    @inbounds while (c = 2 * primeiro - 1) < ultimo
-        #se c for anterior a c e o valor do vetor na posição c for menor que o posterior
-        if c < ultimo && vetor_entrada[c][4] < vetor_entrada[c+1][4]
-            #aumenta c em 1 para referenciar a próxima posição, para indicar que o elemento
-            c += 1
-        end
-        #first é 363000 na primeira iteração e c pode referenciar o último ou o penúltimo item, a depender do ultimo "if"
-        if vetor_entrada[primeiro][4] < vetor_entrada[c][4]
-            troca_elementos!(vetor_entrada, c, primeiro)
-            primeiro = c
-        else
-            break
-        end
+    i::Int64,
+    tam_heap::Int64,
+)
+    maior = i
+    l = 2 * i
+    r = 2 * i + 1
+    # tam_heap = length(vetor_entrada)
+
+    if l <= tam_heap && vetor_entrada[l][4] > vetor_entrada[i][4]
+        maior = l
+    else
+        maior = i
+    end
+    if r <= tam_heap && vetor_entrada[r][4] > vetor_entrada[maior][4]
+        maior = r
+    end
+    if maior != i
+        troca_elementos!(vetor_entrada, i, maior)
+        max_heapify!(vetor_entrada, maior, tam_heap)
     end
 end
+
 
 
 function build_max_heap!(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
@@ -165,6 +185,7 @@ function build_max_heap!(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
     f = length(vetor_entrada) ÷ 2
     @inbounds for i in [f:-1:1;]
         # while f >= 1
+        # max_heapify!(vetor_entrada, i, length(vetor_entrada))
         max_heapify!(vetor_entrada, i, length(vetor_entrada))
         # f -= 1
     end
@@ -175,24 +196,17 @@ function heapsort!(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
 
     #inicia a construção do primeiro heap max
     build_max_heap!(vetor_entrada)
-
-    @inbounds for l in [length(vetor_entrada):-1:2;] #
+    tam_heap = length(vetor_entrada)
+    @inbounds for i in [length(vetor_entrada):-1:2;] #
         #troca a posição do primeiro nó com o último nó do heap
-        troca_elementos!(vetor_entrada, 1, l)
-
+        troca_elementos!(vetor_entrada, 1, i)
+        tam_heap -= 1
         #reconstitui o heap após o swap do primeiro e ultimo nó pela linha anterior
-        max_heapify!(vetor_entrada, 1, l - 1)
+        # max_heapify!(vetor_entrada, 1, i - 1)
+        max_heapify!(vetor_entrada, 1, tam_heap)
     end
 
     return vetor_entrada
-end
-
-
-function heapsort(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
-
-    A = copy(vetor_entrada)
-
-    return heapsort!(A)
 end
 
 
@@ -229,74 +243,6 @@ function quicksort!(
 end
 
 
-
-function quicksort(
-    vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}},
-    otimo::Bool = false,
-)
-
-
-
-    otimo == true ?
-    (return quicksort_otimizado!(vetor_entrada, 1, length(vetor_entrada))) :
-    (return quicksort!(vetor_entrada, 1, length(vetor_entrada)))
-
-
-
-end
-
-function quicksort_otimizado!(
-    vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}},
-    i::Int64,
-    j::Int64,
-)
-
-    if j > i
-        # (726000 -1)÷ 2 + 1
-        indice_pivô = (j - i) ÷ 2 + 1 #mediana do vetor
-        pivô = vetor_entrada[indice_pivô] # elemento aleatório do vetor
-
-        esquerda, direita = i, j
-        while esquerda <= direita
-
-            while vetor_entrada[esquerda][4] < pivô[4]
-                esquerda += 1
-            end
-            while vetor_entrada[direita][4] > pivô[4]
-                direita -= 1
-            end
-            if esquerda <= direita
-                troca_elementos!(vetor_entrada, esquerda, direita)
-
-                esquerda += 1
-                direita -= 1
-            end
-        end
-        t = @spawn quicksort!(vetor_entrada, i, direita)
-        quicksort!(vetor_entrada, esquerda, j)
-        fetch(t)
-    end
-
-    return vetor_entrada
-end
-
-function teste_ordenacao(vetor_entrada::Array{Tuple{Int64,Int64,Int64,Float64}})
-    aux = vetor_entrada[1][4]
-    i = 2
-    j = length(vetor_entrada)
-    while i < j
-        valor_atual = vetor_entrada[i][4]
-        if valor_atual >= aux
-            aux = valor_atual
-        else
-            break
-        end
-        i += 1
-    end
-
-    return i == j
-end
-
 #---Letra k
 ##--- Ordenação individual por empresa
 function dividir_e_ordenar(
@@ -310,87 +256,97 @@ function dividir_e_ordenar(
     elementos_heap = Vector{Vector{Tuple{Int64,Int64,Int64,Float64}}}(undef, m)
     n_contratos = Int64(n * (n + 1) / 2)
 
-
-
     vetor_indices =
         [[1+(i-1)*n_contratos:1:n_contratos+(i-1)*n_contratos;] for i = 1:m]
 
 
-    tasks = Vector{Task}(undef, 100)
+    tasks = Vector{Task}(undef, m)
 
     if paralelizar == true
         #com paralelismo
         for i = 1:m
             tasks[i] = @spawn funcao_ordenacao(vetor_entrada[vetor_indices[i]])
         end
-
         map(x -> elementos_heap[x] = fetch(tasks[x]), 1:m)
+
     else
         #sem paralelismo
         for i = 1:m
             # c = (i - 1) * n_contratos
             indices_empresa = vetor_indices[i]
-
-
             elementos_heap[i] = funcao_ordenacao(vetor_entrada[indices_empresa])
         end
     end
 
-
-
-
-
     return elementos_heap
 end
 #
-
-
-
-
-function dividir_e_ordenar_por_periodos_similares(
+function dividir_e_ordenar2(
     vetor_entrada::Vector{Tuple{Int64,Int64,Int64,Float64}},
-    periodo_minimo::Int64,
     funcao_ordenacao,
-)::Vector{Tuple{Int64,Int64,Int64,Float64}}
+    paralelizar::Bool,
+    k::Int64,# número de divisões antes da ordenação
+)#::Array{Array{Tuple{Int64,Int64,Int64,Float64},1},1}
 
-    n = vetor_entrada[end][3]
-    println(n)
-    vetor_saida = similar(vetor_entrada)
-    indice_inicial = 1
-    indice_final = 120
-    num_contratos = n
-    for i in [1:1:n;]
-        println(indice_inicial, " ", indice_final)
-        vetor_indices = [indice_inicial:1:indice_final;]
-        vetor_saida[vetor_indices] =
-            funcao_ordenacao(vetor_entrada[vetor_indices])
-        num_contratos -= 1
-        indice_inicial = indice_final + 1
-        indice_final = indice_inicial + num_contratos - 1
-        # if i == periodo_minimo
-        #     break
-        # end
+    elementos_heap = Vector{Vector{Tuple{Int64,Int64,Int64,Float64}}}(undef, k)
+    n_elementos_por_vetor = length(vetor_entrada) ÷ k #
+    n_elementos_ultimo_vetor =
+        length(vetor_entrada) - (k - 1) * n_elementos_por_vetor
+    ind_inicial = 1
 
+    vetor_indices = Array{Array{Int64,1},1}(undef, k)
+
+    for i = 1:k-1
+        vetor_indices[i] = [
+            1+(i-1)*n_elementos_por_vetor:1:n_elementos_por_vetor+(i-1)*n_elementos_por_vetor;
+        ]
     end
-    # if indice_inicial != indice_final
-    #     vetor_saida[indice_inicial:end-1] =
-    #         funcao_ordenacao(vetor_entrada[indice_inicial:end-1])
-    # end
 
-    # vetor_saida[indice_inicial:end] =
-    #     funcao_ordenacao(vetor_entrada[indice_inicial:end])
+    # vetor_indices = [
+    #     [
+    #         1+(i-1)*n_elementos_por_vetor:1:n_elementos_por_vetor+(i-1)*n_elementos_por_vetor;
+    #     ] for i = 1:k-1
+    # ]
 
-    return vetor_saida
+    vetor_indices[k] = [
+        vetor_indices[k-1][end]+1:1:vetor_indices[k-1][end]+n_elementos_ultimo_vetor;
+    ]
+
+
+    tasks = Vector{Task}(undef, k)
+
+    if paralelizar == true
+        #com paralelismo
+        for i = 1:k
+            tasks[i] = @spawn funcao_ordenacao(vetor_entrada[vetor_indices[i]])
+        end
+
+        map(x -> elementos_heap[x] = fetch(tasks[x]), 1:k)
+
+    else
+        #sem paralelismo
+        for i = 1:k
+            # c = (i - 1) * n_contratos
+            indices_empresa = vetor_indices[i]
+            elementos_heap[i] = funcao_ordenacao(vetor_entrada[indices_empresa])
+        end
+    end
+
+    return elementos_heap
 end
-##---intercalação de vetores ordenados
+
+##---intercalação de k vetores ordenados
 function intercalar_k_vetores_ordenados(
     vetores::Array{Array{Tuple{Int64,Int64,Int64,Float64},1},1},
 )::Vector{Tuple{Int64,Int64,Int64,Float64}}
     m = length(vetores)
-    tamanho_saida = m * length(vetores[1])
+    # tamanho_saida = m * length(vetores[1])
+    tamanho_saida = sum(length.(vetores))
+
+
     build_min_heap!(vetores)
     saida = Vector{Tuple{Int64,Int64,Int64,Float64}}(undef, tamanho_saida)
-    i = 1
+
     @inbounds for i = 1:length(saida)
         saida[i] = popfirst!(vetores)
         if length(vetores[1]) == 0
@@ -510,7 +466,7 @@ Base.:>(
 
 ##--- Ordenação por heap 2D
 
-function ordenacao_heap_2D(
+function intercalacao_heap_max(
     entrada_matricial::Array{Float64,3},
     paralelizar::Bool,
 )::Array{Array{Tuple{Int64,Int64,Int64,Float64},1},1}
@@ -519,17 +475,18 @@ function ordenacao_heap_2D(
     n_contratos = Int64(n * (n + 1) / 2)
 
     elementos_heap = Vector{Vector{Tuple{Int64,Int64,Int64,Float64}}}(undef, m)
-
     if paralelizar == true
         tasks = Vector{Task}(undef, 100)
         for i = 1:m
             tasks[i] = @spawn ordenar_empresa_individual(entrada_matricial, i)
+            # tasks[i] = @spawn ordenar_empresa_individual(dados_empresas[i])
         end
-
         map(x -> elementos_heap[x] = fetch(tasks[x]), 1:m)
+
     else
         elementos_heap =
             map(x -> ordenar_empresa_individual(entrada_matricial, x), 1:m)
+        # map(x -> ordenar_empresa_individual(dados_empresas[x]), 1:m)
     end
 
     return elementos_heap
@@ -543,6 +500,8 @@ function ordenar_empresa_individual(
         entrada_matricial[empresa, :, x]
         for x in [size(entrada_matricial, 2):-1:1;]
     ]
+
+    # matriz = entrada_matricial
     mes_final = size(entrada_matricial, 2)
     vetor_indices = map(x -> (1, x), [size(entrada_matricial, 2):-1:1;])
     saida = Vector{Tuple{Int64,Int64,Int64,Float64}}(
